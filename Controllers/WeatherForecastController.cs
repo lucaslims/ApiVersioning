@@ -12,6 +12,7 @@ namespace ApiVersioning.Controllers
     [ApiVersion("1.0", Deprecated = true)]
     [ApiVersion("2.0")]
     [Route("api/[controller]", Name = "WeatherForecast")]
+    [Route("api/v{version:apiVersion}/[controller]", Name = "WeatherForecast")]
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries = new[]
