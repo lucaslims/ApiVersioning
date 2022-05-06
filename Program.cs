@@ -1,28 +1,50 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using ApiVersioning.Extensions;
+using ApiVersioning.Middleware;
 
-namespace ApiVersioning
+var builder = WebApplication.CreateBuilder(args);
+var _config = builder.Configuration;
+
+// Add services to the container.
+builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy",
+                    builder => builder
+                    .WithOrigins("http://localhost", "https://localhost")
+                    .WithHeaders("Accept", "Content-Type", "Origin", "X-Requested-With", "X-Custom-Header")
+                    .WithMethods("GET", "POST")
+                    );
+            });
+
+builder.Services.AddApplicationServices(_config);
+builder.Services.AddControllers();
+builder.Services.AddSwaggerDocumentation();
+builder.Services.AddCustonApiVersioning();
+builder.Services.AddIdentityService(_config);
+
+var app = builder.Build();
+var _provider = app.Services.GetService<IApiVersionDescriptionProvider>();
+
+app.UseMiddleware<ExceptionMiddleware>();
+
+if (app.Environment.IsDevelopment())
 {
-#pragma warning disable 1591
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            CreateHostBuilder(args).Build().Run();
-        }
-
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
-    }
-#pragma warning restore 1591
+    app.UseSwaggerDocumentation(_provider);
 }
+
+// app.UseHttpsRedirection();
+
+app.UseCors("CorsPolicy");
+
+app.UseRouting();
+
+app.UseAuthentication();
+
+app.UseAuthorization();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
+
+app.Run();
